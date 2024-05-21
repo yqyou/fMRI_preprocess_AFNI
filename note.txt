@@ -1,0 +1,356 @@
+sag: sagittal , 矢状面
+cor: coronal, 冠状面
+tra: transection, 横切面
+
+1. 20210824104805_15_t1_mpr_sag_iso_mww.json文件名种的mpr, iso是什么意思？20210824104805_12_ep2d_2x2x2mm_166_4.json文件名中的166和4指的是什么？
+为什么t1像是iso，没有timing slice，而epi却有?
+文件中的各参数代表什么？
+2. field mapping是用来干嘛的？除了T1和T2，一般还需要扫描哪些？（localizer\field mapping）
+3. 函数：fslreorient2std, t1.pstem
+4. t1 = Path(f'{t1.pstem}+orig')这句是什么意思，'orig'
+5. 为什么step9用的是pb06而非pb06s?
+
+SOFTWARE:
+AFNI
+    AFNI (Analysis of Functional NeuroImages) is a leading software suite of C, Python, R programs and shell scripts primarily developed for the analysis and display of multiple MRI modalities: anatomical, functional MRI (FMRI) and diffusion weighted (DW) data.
+    It is freely available (both as open source code and as precompiled binaries) for research purposes. The software is made to run on virtually any Unix system with X11 and Motif displays. 
+    Binary packages are provided for MacOS and Linux systems such as Fedora, CentOS/Red Hat and Ubuntu (which includes the Windows Subsystem for Linux). 
+
+SUMA--AFNI Surface mapping
+    SUMA is a program that adds cortical surface based functional imaging analysis to the AFNI suite of programs. 
+    It allows viewing 3D cortical surface models, and mapping volumetric data onto them. 
+    With SUMA, AFNI can simultaneously and in real-time render Functional Imaging data in 4 modes: Slice, Graph (time series), Volume and Surface with direct links between them.
+
+
+DATA FORMAT:
+*DICOM: Digital Imaging and Communications in Medicine  is a comprehensive set of standards for handling, storing and transmitting information in medical imaging. It includes a file format definition and a network communication protocol.
+*mgh/mgh: FreeSurfer(volume), named after the Massachusetts General Hospital
+*NIFTI: supported by freesurfer, AFNI ,... While many FreeSurfer programs will read and write NIfTI-1 volumes, the preferred usage is to convert data to .mgh/.mgz format once when importing data, working with .mgh/.mgz during analysis, and converting to NIfTI-1 when exporting data. 
+*BRIK&HEAD: AFNI. AFNI datasets are typically in pairs of .HEAD and .BRIK files. 
+            The BRIK file contains only the raw voxel data, that is just binary data without any description. 
+            The HEAD file has that information along with orientation order, voxel sizes, TRs and lots of other bits of information. 
+            If you look at the .HEAD file, which is really a simple text file, or use "3dAttribute -all", you will see the dataset is described by a set of "attributes".
+ *tlrc: In AFNI, a +tlrc extension (and the “Talairach View”) simply means that the image has been normalized. 
+            It does not mean that the image is necessarily in Talairach space; for legacy purposes, however (i.e., in 
+            order to make sure the code still worked in newer versions), the Talairach label was retained. You can 
+            check which space the image has been warped to by using the command on the image, and finding 
+            the “Template Space” field - the three possibilities are “ORIG” (i.e., it hasn’t been warped), “TLRC” 
+            (normalized to Talairach space), and “MNI” (normalized to MNI space). 
+            [3dinfo -space]
+
+AFNI Command:
+! dcm2niix_afni -- 
+! 1d_tool.py -- for read/manipulate/write/diagnose 1D files
+! 1dplot -- graphs the cols of a *.1D time series file to the X11 screen, or to an image file (.jpg or .png).
+            1dplot [options] tsfile
+            -sep: plot each column in a separate sub-graph.
+            -one: plot all cols in one big graph.
+            -sepscl: plot each col in a separate sub-graph and allow each sub-graph have a different y-scale.
+            -x X.1D: x axis;  -x110:log10(X.1D);  -xzero -title -xlabel
+            -jpg -jpeg -png: render plot to an image and save to a file
+! ConvertDset -- convert a surface dataset from one format to another.
+            ConvertDset -o_TYPE -input DSET [-i_TYPE] [-prefix OUT_PREF]
+            -o_TYPE: type of outpt dset[niml_asc, niml_bi, 1D, 1Dp, 1Dpt, gii, gii_asc, gii_b64, gii_b64gz]
+            -input: input dataset to be converted
+! 3dcopy -- Copy AFNI datasets
+! 3drename -- Rename AFNI datasets
+! 3dMean: calculate the mean of a collection of datasets.
+! 3dcalc -- voxel-by-voxel arithmetic on 3D datasets
+            3dcalc -a ... -expr 'step(a)' -prefix ...
+            -a: read dname and call the voxel value 'a' in the -expr
+            -expr: expression['step' and 'ispositive' are identical expressions]
+! 3dinfo：print out information about a 3D dataset.
+! 3drefit -- edit the header information about a 3D dataset.
+            Note that this program does NOT change the .BRIK file at all. the main purpose of 3drefit is to fix up errors made when using to3d.
+            Use the command '3dinfo' both before and after 3drefit to make sure the changes have been made correctly
+            Now 3drefit can work on NIfTI datasets.
+! 3dSkullStrip -- extract the brain from surrounding tissue from MRI T1-weighted images.
+            3dSkullStrip -input ... -prefix ... -orig_vol
+            -orig_vol: Output a masked version of the input AND do not modify the values inside the brain as -norm_vol would.
+! @Align_Centers -- Moves the center of DSET to the center of BASE.
+            @Align_Centers -cm [-no_cp] -base ... -dset ... -child ...
+            -cm: use the brain's' center of mass instead.
+            -no_cp: Do not create new data, shift existing ones. This is a good option if you know what you are doing. It will save you a lot of space.
+            -base: base volume, typically a template.
+            -dset: typically an anatomical dset to be aligened to BASE.
+            -child: a bunch of dsets, should be shifted in the same way.
+! @SUMA_Make_Spec_FS -- prepare for surface viewing in SUMA.
+            @SUMA_Make_Spec_FS -sid ... -fspath ... -NIFTI > SUMA_Make_Spec_FS.log
+            -sid: subject id
+            -fspath: path to 'surf' and 'orig' directories(the mri/orig should also be located here)
+            -NIFTI: bring that output into standard NIFTI and GIFTI format
+! @SSwarper -- dual purposes for processing:(1)to skull-strip the brain, (2) to calculate the warp to a reference template/standard space.
+            @SSwarper -input ... -base ... -subid ... -odir mni -verb
+            -odir: output dir
+            -verb: to get more verbose progress information - mostly used for debugging.
+            Output:
+                anatU.sub.nii  - intensity uniform-ized original dataset
+                anatUA.sub.nii - anisotropically smoothed version of the above
+                anatUAC.sub.nii - ceiling-capped ver of the above (at 98%ile of non-zero values)
+                anatS.sub.nii - first pass skull-stripped original dataset
+                anatSS.sub.nii - second pass skull-stripped original dataset
+                [anatS and anatSS are stripped versions of anatUAC, have been unifized and weakly smoothed]
+                anatQQ.sub.nii - skull-stripped dataset nonlinearly warped to the base template space;
+                anatQQ.sub.aff12.1D - affine matrix to transform original dataset to base template space;
+                anatQQ.sub_WARP.nii - incremental warp from affine transformation to nonlinearly aligned dataset;
+                [* The .aff12.1D and _WARP.nii transformations need to be catenated to get the full warp from orginal space to the base space]
+                AMsub.jpg - 3x3 snapshot image of anatQQ.sub.nii, ulay is anatomical dset, check the alignment
+                MAsub.jpg - silimar to above, ulay is base template
+                QC_anatQQ.sub.jpg - like AM*.jpg, but 3 rows of 8 slices
+                QC_anatSS.sub.jpg - check the skullstripping in orig space, ulay is input, olay is mask
+                init_qc_00_overlap_unip_obase.jpg - ulay is original source dset, olay is original base dset
+! 3dTcat -- Concatenate sub-bricks from input datasets into one big 3D+time dataset.
+            3dTcat -prefix ... ...
+            Command line arguments after the above are taken as input datasets.
+! 3dDespike -- Removes 'spikes' from the 3D+time input dataset and writes a new dataset with the spike values replaced by something more pleasing to the eye.
+            3dDespike -NEW -nomask -prefix ... ...
+            - NEW: use the 'new' method for computing the fit
+            - nomask: process all voxels
+! 3dTshift -- Shifts voxel time series from the input dataset so that the separate
+                slices are aligned to the same temporal origin.
+            Method:  detrend -> interpolate -> retrend (optionally)
+            3dTshift [-median] -tzero 0 -quintic -prefix ... -verbose -tpattern @{'../rawdicom/SliceTiming.txt'} ...
+            -median: compute median of input voxels  [undetrended]
+            -tzero: align each slice to time offset
+            -quintic: temporal interpolation method -- Use the quintic (5th order) Lagrange polynomial interpolation.
+            -tpattern: use tpattern as the lice time pattern rather than the pattern in the input dset header
+                        @filename: read temporal offsets from 'filename'
+! 3dAutomask -- Input dataset is EPI 3D+time, or a skull-stripped anatomical. Output dataset is a brain-only mask dataset.
+                                This program by itself does NOT do 'skull-stripping'.
+            3dAutomask -apply_prefix ... ...
+            -apply_prefix: Apply mask to input dataset and save masked dataset
+! 3dQwarp --Computes a nonlinearly warped version of source_dataset to match base_dataset.
+            3dQwarp -plusminus -pmNAMES ... ...                         \
+                            -pblur 0.05 0.05 -blur -1 -1                          \
+                            -noweight -minpatch 9                                 \
+                            -noXdis -noZdis                                       \
+                            -source ... -base ... -prefix ...
+            -base: base_dataset
+            -source: source_dataset
+            -plusminus: Normally, the warp displacements dis(x) are defined to match base(x) to source(x+dis(x)).
+                                With this option, the match is between base(x-dis(x)) and source(x+dis(x)) -- the two images 'meet in the middle'.
+            -pmNAMES: This option lets you change the PLUS and MINUS prefix appendages
+                                    alluded to directly above to something else that might be more easy for you to grok.
+            -pblur: Use progressive blurring; that is, for larger patch sizes, the amount of blurring is larger.
+            -blur: Use progressive blurring; that is, for larger patch sizes, the amount of blurring is larger.
+            [Blurring the inputs (avoid trying to match TOO much detail)]
+            -noweight: binary weight, each voxel in the base volume automask will be weighted the same in the computation of the cost functional
+            -minpatch: Set the minimum patch size for warp searching to 'mm' voxels.
+            -noXdis&noZdis: These options let you specify that the warp should not displace in the given direction.
+            Output: The 3D warp used is saved in a dataset with prefix '{prefix}_WARP'
+            3dNwarpApply would use '{prefix}_WARP' to transform datasets aligned with the source dataset to be aligned with the base dataset.
+! 3dNwarpApply --  to apply a nonlinear 3D warp saved from 3dQwarp (or 3dNwarpCat, etc.) to a 3D dataset, to produce a warped version of the source dataset.
+            3dNwarpApply -quintic -nwarp ... -source... -prefix ...
+            -nwarp: 3D warp dataset
+! 3dvolreg -- Registers each 3D sub-brick from the input dataset to the base brick 'dataset' may contain a sub-brick selector list.
+            - this progran is limited to rigid body (6 parameter: roll pitch yaw dS dL dP)
+            3dvolreg -verbose -zpad 1 -base ... -1Dfile ... -cubic -1Dmatrix_save ... -prefix ... ...
+            -zpad: Zeropad around the edges by 'n' voxels during rotations
+            -1Dfile: Save the motion parameters ONLY in file.
+            -cubic:  Use cubic polynomial interpolation.
+            -1Dmatrix_save: Save the matrix transformation from base to input coordinates in file 'ff' (1 row per sub-brick in the input dataset).
+! 3dAllineate -- align one dataset (the 'source') to a 'base' dataset, using an affine (matrix) transformation of space.
+            3dAllineate -base ... -input ... -1Dmatrix_apply ... -final NN -quiet -prefix ...
+            -final: Defines the interpolation mode used to create the output dataset.
+            -quiet: Don't print out verbose stuff. (But WHY?)
+            -1Dmatrix_apply: Use the matrices in file 'aa' to define the spatial transformations to be applied
+                Xin = Xsource = M Xout = M Xbase
+                Xout = Xbase = inv(M) Xin = inv(M) Xsource
+! 3dVol2Surf -- map data from a volume domain to a surface domain
+            3dVol2Surf -spec ... -sv ... -surf_A smoothwm  -surf_B pial   -f_index nodes  -f_steps 10  -map_func ave -oob_value 0  -grid_parent ...  -out_niml ...
+            -spec: SUMA spec file. (e.g., fred.spec) The surface specification file contains the list of mappable surfaces that are used.
+            -sv: SURFACE_VOLUME, AFNI volume dataset. (e.g., fred_ana+orig) This is the AFNI dataset that the surface is mapped to. This dataset is used for the initial surface node to xyz coordinate mapping, in the Dicom orientation.
+            -grid_parent: AFNI_DSET, AFNI volume dataset. (e.g., fred_function+orig) This dataset is used as a grid and orientation master for the output (i.e. it defines the volume domain). It is also the source of the output data values.
+            -out_niml: specift a niml file for the output
+            -surf_A&-surf_B: name of surface A&B (from spec file, and must be unique)
+            -f_index: specifies whether to use all segment point values in the filter or use only those corresponding to unique volume voxels.
+            -f_steps: number pf evenly spaced points along each segment
+            -map_func: filter for values along the segment
+            -oob_value: specift default value for oob nodes
+! 3dDeconvolve
+    -   Program to calculate the deconvolution of a measurement 3D+time dataset  with a specified input stimulus time series.
+        This program can also perform multiple linear regression using multiple input stimulus time series. 
+    - Ordinary least squares regression(olsq): 
+        Z(t)= K(t)*S(t)+baseline+noise
+            - Z(t)=data;
+            - K(t)=kernel (HRF); 
+            - S(t)=stimulus time series; 
+            - baseline=constant,drift,etc; can use the -ortvec model to include estimated motion parameters.
+                Baseline means the model that forms the null hypothesis. Fstat result is F of the full model vs. the baseline model.
+            - *=convolution
+        Then 3dDeconvolve solves for K(t) given S(t).
+    -   Output consists of an AFNI 'bucket' type dataset containing(for each voxel/vertex):
+            * the F-statistics for significance of the overal regression model
+            * the least squares estimates of the linear regression coefficients
+            * t-statistics for significance of the coefficients
+            * partial F-statistics for significance of individual input stimuli
+        optionally output:
+            * the estimated impluse response function
+            * the fitted model and error(residual) time series
+        [the statistics(F, t, R^2) are marginal/partial statistics. 
+        for example, the null hypothesis for the t-statistic for a single beta coef. is the full regression model minus just that single regressor.]
+    Usage:
+        ***input data and control options***
+            - input: 3D+time datatset [more than one datasets will be auto-catenated in time]
+            ***********
+            [Internally, the program makes allowance for the fact that an input stimulus from one run 
+            should not effect the measured response for the following run.
+            Another change that is required for processing of concatenated runs is the addition of separate 
+            baseline parameters for each run.As a consequence, if the baseline model is to represent a 
+            constant offset plus linear trend (i.e., 2 parameters) for each run, and if the concatenated 
+            dataset contains r runs, then the baseline model contains a total of 2r parameters]
+            (but the coff. of the single input stimulus function are the same for each run)
+            ************
+            - censor: censor .1D time series. a file of 1s and 0s indicating which time points to be included or excluded
+            - polort: degree of polynomial corresponding to the nul hypothesis
+        ***input stimulus options***
+            - num_stimts: number of input stimulus time series
+            - stim_file k sname: filename for kth time series input stimulus
+            - stim_label k slabel: label for kth time series input stimulus. the output sub-bricks will be labeled
+            - stim_base k: kth input stimulu is part of the baseline model. 
+                [such as, we use '-stim_file' to inset motion parameters into baseline model]
+            - ortvec fff lll: input a rectangular array of 1 or more baseline vectors from 'fff' which will get the label 'll'.
+                [the same as using '-stim_file'plus '-stim_base']
+            - stim_times k tname Rmodel: generate the k-th resposne model from 'tname'. 'Rmodel' contains stimulus durations.
+                [the format of 'tname' is one line per imaging run and each line contains the list of start times (for second)
+                for the stimuli in class 'k'.]
+                ['Rmodel': 'BLOCK(d,p)', d means duration(for seconds), p is the amplitude of the basis function, should usually be set to 1. 
+                other models: 'TENT(b,c,n)','CSPLIN(b,c,n)', etc...]
+        ***General linear test (GLT) options***
+            -gltsym gltname: read the GLT with symbolic names from the file
+            -glt_label k glabel: label for kth general linear test
+        ***options to create 3D+time datasets***
+            - errts: prefix of 3D+time output dataset, residual error time series from the full model fit to the input data
+        ***options to control the contents of the ouput bucket datatset***
+            - fout: flag to output the F-statistics for each stimulus
+            - rout: R^2 statistics
+            - tout: t-statistics
+            - bucket: create one AFNI 'bucket' dataset containing various arameters of initerest
+        ***options to control miscellanous outputs***
+            - xjpeg: write a JPEG file graphing the X matrix
+            - x1D: save X matrix to a .xmat.D (ASCII) file
+            - x1D_uncensored: save X matrix to a .xmat.1D file but without any censoring
+        ***multiple CPU option***
+            - jobs: num of cpu
+
+
+FreeSurfer Command:
+! recon-all -- reconstruction, as in reconstructing a two-dimensional cortical surface from a three-dimensional volume.
+            Output are stored in a '/mri':
+                First, strip the skull --> brainmask.mgz
+                Then, estimates where the interface is between the white matter and grey matter for both hemispheres --> lh.orig & rh.orig
+                The initial estimates is refined and saved --> lh.white & rh.white
+                This boundary of white matter is used as a base to search for the edge of the grey matter --> lh.pial & rh.pial
+            ! recon-all -s {subj} -i {subj}_2FS.nii.gz -all > ./reconlog.txt
+            -s: subject name
+            -i: anatomical image
+            -all: run all of the preprocessing steps
+! mirs_convert -- general conversion program for converting between cortical surface file formats
+        - 
+! tksurfer -- can be started in any of three ways: launching it from FreeSurfer with the Surface button, using the tksurfer-sess script, and calling it from the command line
+        tksurfer SUBJECT HEMISPHERE SURFACE
+        tksurfer bert rh pial
+
+
+AFNI controller:
+- overlay & underlay: underlay--brain, overlay--result
+
+
+
+SUMA Command:
+! suma -spec [.spec] -sv [vol] -input [niml/gifti/1D]
+! afni niml&suma -spec -sv
+    afni 与 suma 联动，不仅可以将volume和surface联结，还可以实现volume brik文件或surface dset文件在suface或volume上显示（无需额外转化）
+SUMA VIEWER: https://afni.nimh.nih.gov/pub/dist/doc/htmldoc/SUMA/Viewer.html
+    't': talk to afni
+    'right-click': select a voxel/vertex
+    '.': inflated
+    'z'or'Z': zoom in or out
+    'ctrl+left/right': views along LR axis; 'ctrl+up/down': views along SI axis; 'ctrl+shift+up/down': view along AP axis
+    'r' or 'R': snapshots or record
+    'ctrl+n': open a new SUMA viewer
+    '[' or ']': hide/show left/right hemisphere
+SUMA CONTROLLER: https://afni.nimh.nih.gov/pub/dist/doc/htmldoc/SUMA/Controllers.html#surfcont-dset-mapping-t
+    'ctrl+s': open SURFACE CONTROLLER:
+        -IxT: I&T selection linking modes.
+            same: set the T selector to match the I selector
+            stat: switch T selector to match an I selction with an obvious statistic
+        -I: intensity column
+        -T: threshold column
+        -B: brightness column
+        -ThrVal[0]: threshold value(e.g., '0.001p' to set by p value, '20%' to set by percentile)
+        -pval: nominal p-value per node; FDR q-value
+        -'v' turn 'on' or 'off' the color map
+        for example, we set ...
+            set IxT = stat; when selecting I=x1_coef, T=x1_tstat, set thrval as 0.001p, then the pval will be 
+            shown on the left bottom of the colorbar: p=1.0-3, q=.0022(supoosed), and the thrval maybe
+            replaced with a num(4.2278 as the t-value/F-value calculated by the p-value we set). we turn 
+            on the I & T color map, then what're colored are nodes whose T column(x2_tstat) > Threshold
+            (thrval=4.2278), the color indicates the intenity provided by the I column(x1_coef).
+SUMA Clipping Planes: https://afni.nimh.nih.gov/pub/dist/doc/htmldoc/SUMA/Clipping.html
+SUMA DrawingROIs: https://afni.nimh.nih.gov/pub/dist/doc/htmldoc/tutorials/DrawingSurfaceROIs/DrawingROIs.html
+    - 'ctrl+d': open the DrawROI GUI
+    - 'right-button'/ 'left-button(in Pen Mode)': draw ROI. An ROI can be a single node, a curve(formed by connected nodes), a loop(or a closed curve or contuor) and filled loop.
+    - set "Label" of the ROI
+    - close the path with the "Join" button
+    - 'right-click'/ 'left-click(in Pen Mode)': fill the closed path inside the contuor
+    - declare the ROI finished with the "Finish" button
+    - switch back or forth between ROIs with the "Switch ROI" button
+    - delete the current ROI with the "delete ROI" button
+    - save the ROIs to disk by "Save" button, and set options to file format(NIML/1D) and ROI(ALL/this)
+    [These ROIs can be transformed to a surface domain data set using the program ROI2dataset and then transformed into 
+    a Volume ROI using the program 3dSurf2Vol. Other programs of interest would be SurfPatch, SurfMask, and ROIgrow.]
+
+
+Function:
+findminoutlier -- find the volume with min outlier as the base of motion correction
+            Output:
+                out.pre_ss_warn.txt: warning for pre-steady state in the first TRs, consider change tr_discard
+                outcont.r**.1D: fraction of outlier in each volume
+                outcount_rall.1D concatenate fraction of outlier
+                out.min_outlier.txt  tells you which run, which TR is min_outlier
+
+PREPROCESS:
+1 organize data
+1.1 把dicom文件转换为nifti文件
+
+2 anatpp
+2.1 简单修改原始t1像的header，包括把图像中点和朝向
+2.2 3dSkullStrip简单剥头皮，然后用@Align_Centers根据剥完头皮的t1像和MNI模板重心对齐的移动去校正原始t1的位置（最后只保留对齐的原始t1，而非剥过头皮的t1）
+    'SS'代表'skull-stripped'
+【问题，MNI模板是没有头皮的吗？所以要先剥头皮再对齐重心？】
+2.3 用freesurfer的recon-all对t1进行皮层重建，得到白质和灰质，可以用freeview查看。
+    由于输出结果是freesurfer的数据格式，所以需要用SUMA_Make_Spec_FS把结果转换为AFNI中皮层加工模块SUMA可以呈现的格式NIFIT或GIFIT。
+    可以打开afni和suma来检查联通情况
+【问题，在检查皮层重建的时候，可以不用freeview，直接用afni和suma吗？】
+2.4 把t1线性和非线性配准到MNI模板上，这一步先剥头皮，然后再配准过去。
+2.5 SUMA 其中会默认以密度为60和141网格作为标准网格，生成std.60...&std60...
+
+3 functpp01
+3.0 functpp所需数据：
+    {subj}_SurfVol.nii -- t1, /home/software/freesurfer/7.3.2/subjects/{subj}/SUMA/
+    anatSS.{subj}.nii -- t1ss, /home/software/freesurfer/7.3.2/subjects/{subj}/mni/anatSS.{subj}.nii
+    *ep2d*.nii -- epi files, /home/data/rawdata/20210824_faceprf_CN001/rawdicom/
+    SliceTiming.txt
+    anatQQ.{subj}_WARP.nii & anatQQ.{subj}.aff12.1D -- nonlinear warp transformations, {FREESURFER_HOME}/subjects/{subj}/mni/
+    MNI152_2009_template_SSW.nii.gz -- mni template, {AFNI_HOME}/
+3.1 把所需数据复制到funcpp/下
+    用3dTcat去掉每个run最开始不要的TR，保存成pb00.{subj}.r{run}.3dTcat
+    用3drefit和fslreorient2std修改epi的header，修改图像中点和朝向
+    用@Align_Centers把epi和t1ss的重心对齐
+【问题，为什么t1到mni的中心对齐需要剥头皮，而epi到t1ss不需要呢？】【答，epi本身几乎没有头皮】
+3.2 用findminoutlier找到outlier最小的volume作为motion correction的base
+
+4 functpp02
+4.1 despike
+4.2 timing correction：在对每个voxel对数据建模时，假设所有切片都是同时获取的，因此每个切片的时间序列需要根据获取花费的持续时间后移。
+【问题：为什么要做timing correction,不可以加一个时间参数吗？slicetiming.txt这个文件是怎么来的，作用是什么？】【是否考虑自相关的问题？】
+【答，slicetiming.txt是读取epi原始数据header得到的，是为了每个slice获取的时间点，一般TR之间的slicetiming是一样的，所以写成一个文档】
+4.3 distortion correction
+    用3dTstat对每一对run(fwd&rev)，对一个run里的voxels值（一个run里有很多TR）取中位数
+    用3dAutomask对median datasets生成mask
+    用3dQwarp计算每一对fwd和rev的midpoint warp('meet in the middle')，得到3d warp
+    用3dNwarpApply把每个run(fwd or rev)通过对应的warp做矫正
+    为了方便检查这一步的效果，我们用3dNwarpApply对每个median datasets也做矫正，然后分别对fwd和rev平均，得到post图像，用fsleyes检查
+【问题，3dAutomask和3dSkullStrip有什么区别？】【3dSkullStrip--anatomical; 3dAutomask--functional】
+4.4 motion correction

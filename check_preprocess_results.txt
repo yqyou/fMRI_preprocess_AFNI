@@ -1,0 +1,32 @@
+Anatprep:
+(1) 对t1简单处理之后，用fsleyes检查/home/data/subjectT1/{subj}/{subj}_2FS.nii.gz
+看看有没有奇怪的阴影
+(2) freesurfer皮层重建之后，
+①. 用fsleyes检查/home/software/freesurfer/7.3.2/subject/{subj}/mri中的brainmask.mgz和T1.mgz
+【为什么正中矢状面总会有一层？那是啥】
+【为什么有些朝向和其他不一样】
+②. 用freeview打开brainmask.nii.gz, lh_pial, rh_pial, lh_white，rh_white
+用不同的颜色标注，查看灰质和白质是否分的好
+(3) t1配准到mni之后，用fsleyes检查/hom/software/freesurfer/7.3.2/{subj}/mni中的
+①. 配准情况：anatQQ.{subj}.nii
+②. 剥头皮：anatSS.{subj}.nii
+(4) afni中皮层加工模块SUMA设置完之后，在terminal，$FREESURFER_HOME/subjects/{subj}/SUMA下输入:
+afni -niml & suma -spec CN026_both.spec -sv CN026_SurfVol.nii
+会出现被试的surface和volume，键盘't'，连通两者。点击surface的坐标点，volume坐标也会随之变化。键盘'.'可以吹鼓surface
+【surface是灰质那层吗？】
+
+Funcprep:
+路径：/home/data/rawdata/CET_fmri/20221208_CET_CN026/funcpp/
+(1) distortion correction之后，用fsleyes检查blip_pre_fwd.epi_mean.nii.gz,...
+看看矫正效果
+(2) motion correction之后，在/mc检查四张头动矫正前后的图
+(3) 功能像到结构像的配准，
+①. 用fsleyes检查{subj}_SurfVol_al_junk+orig和epi_mean_tmp+orig：(结构像到功能像)
+检查是否一致，主要是腔室是否对准
+(其中epi_mean_tmp+orig是原始功能像；{subj}_SurfVol_al_junk+orig是结构像到功能像的配准，和anat2epi.{subj}.nii.gz一样)
+②. 用fsleyse检查epi2anat.{subj}和anat_final.{subj}：(功能像到结构像)
+检查是否一致，主要是腔室是否对准，还有灰质和白质是否清楚
+(anat_final.{subj}是原始结构像，epi2anat.{subj}是功能像到结构像)
+
+
+https://andysbrainbook.readthedocs.io/en/latest/AFNI/AFNI_Short_Course/AFNI_Preprocessing/07_AFNI_Checking_Preprocessing.html?highlight=tlrc#viewing-the-aligned-and-co-registered-data
