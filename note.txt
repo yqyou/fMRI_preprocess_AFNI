@@ -6,9 +6,6 @@ tra: transection, 横切面
 为什么t1像是iso，没有timing slice，而epi却有?
 文件中的各参数代表什么？
 2. field mapping是用来干嘛的？除了T1和T2，一般还需要扫描哪些？（localizer\field mapping）
-3. 函数：fslreorient2std, t1.pstem
-4. t1 = Path(f'{t1.pstem}+orig')这句是什么意思，'orig'
-5. 为什么step9用的是pb06而非pb06s?
 
 SOFTWARE:
 AFNI
@@ -156,6 +153,21 @@ AFNI Command:
             -1Dmatrix_apply: Use the matrices in file 'aa' to define the spatial transformations to be applied
                 Xin = Xsource = M Xout = M Xbase
                 Xout = Xbase = inv(M) Xin = inv(M) Xsource
+! align_epi_anat.py -- align EPI to anatomical datasets or vice versa
+            12 affine parameters: translation, rotation, scaling, shearing
+            align_epi_anat.py -anat2epi -anat ... -anat_has_skull ... \
+                -suffix ... -epi ... -epi_base ...-epi_strip ... -giant_move -volreg ... -tshift ..
+            -anat2epi: Align anatomical to EPI dataset
+            -anat: structural dataset
+            -anat_has_skull: do not skullstrip anat dataset yes, no
+            -epi: EPI dataset
+            -epi_base: epi base used in alignment (0/mean/median/max/subbrick#)
+            -epi_strip: nethod to remove skull for epi
+            -giant_move: Even larger moevment required
+            -volreg: on/off. do volume registration on EPI before alignment
+            -tshift: on/off. do time shifting of EPI dataset before alignment
+            -suffix: defaul _al
+
 ! 3dVol2Surf -- map data from a volume domain to a surface domain
             3dVol2Surf -spec ... -sv ... -surf_A smoothwm  -surf_B pial   -f_index nodes  -f_steps 10  -map_func ave -oob_value 0  -grid_parent ...  -out_niml ...
             -spec: SUMA spec file. (e.g., fred.spec) The surface specification file contains the list of mappable surfaces that are used.
@@ -341,7 +353,7 @@ PREPROCESS:
 【问题，为什么t1到mni的中心对齐需要剥头皮，而epi到t1ss不需要呢？】【答，epi本身几乎没有头皮】
 3.2 用findminoutlier找到outlier最小的volume作为motion correction的base
 
-4 functpp02
+4 funcpp02
 4.1 despike
 4.2 timing correction：在对每个voxel对数据建模时，假设所有切片都是同时获取的，因此每个切片的时间序列需要根据获取花费的持续时间后移。
 【问题：为什么要做timing correction,不可以加一个时间参数吗？slicetiming.txt这个文件是怎么来的，作用是什么？】【是否考虑自相关的问题？】
